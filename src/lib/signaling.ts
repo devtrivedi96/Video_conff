@@ -135,7 +135,40 @@ export class SignalingService {
     fromPeerId: string,
     answer: RTCSessionDescriptionInit
   ) {
-    await this.webrtc.setRemoteDescription(fromPeerId, answer);
+    const pc = this.webrtc.getPeerConnection(fromPeerId);
+    if (!pc) {
+      this.log("handleAnswer: no peerConnection for", fromPeerId);
+      return;
+    }
+
+    // Only apply answer if we are in have-local-offer state
+    if (pc.signalingState !== "have-local-offer") {
+      this.log(
+        "handleAnswer: ignoring answer because signalingState is",
+        pc.signalingState
+      );
+      return;
+    }
+
+    try {
+      await this.webrtc.setRemoteDescription(fromPeerId, answer);
+    } catch (err: any) {
+      this.log("Error setting remote description (answer):", err?.name || err);
+      // Attempt SDP rollback if supported
+      try {
+        this.log("Attempting SDP rollback for", fromPeerId);
+        await pc.setLocalDescription({ type: "rollback" } as any);
+        await this.webrtc.setRemoteDescription(fromPeerId, answer);
+        this.log("Rollback + setRemoteDescription succeeded for", fromPeerId);
+      } catch (rbErr) {
+        this.log("Rollback failed for", fromPeerId, rbErr);
+        // Give up and remove the peer connection to allow a fresh retry
+        try {
+          pc.close();
+        } catch (e) {}
+        this.webrtc.removePeerConnection(fromPeerId);
+      }
+    }
   }
 
   private async handleIceCandidate(
