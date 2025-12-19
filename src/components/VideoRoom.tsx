@@ -2,18 +2,31 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { WebRTCManager } from "../lib/webrtc";
 import { SignalingService } from "../lib/signaling";
 import { db } from "../lib/firebase";
-import { doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  deleteDoc,
+  serverTimestamp,
+  onSnapshot,
+  updateDoc,
+} from "firebase/firestore";
 import { VideoGrid } from "./VideoGrid";
 import { ControlBar } from "./ControlBar";
 import { Copy, Check } from "lucide-react";
 
 interface VideoRoomProps {
   roomId: string;
-  userId: string;
+  localUid: string;
+  localDisplayName: string;
   onLeave: () => void;
 }
 
-export function VideoRoom({ roomId, userId, onLeave }: VideoRoomProps) {
+export function VideoRoom({
+  roomId,
+  localUid,
+  localDisplayName,
+  onLeave,
+}: VideoRoomProps) {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [screenSharing, setScreenSharing] = useState(false);
@@ -25,7 +38,8 @@ export function VideoRoom({ roomId, userId, onLeave }: VideoRoomProps) {
 
   const webrtcRef = useRef<WebRTCManager | null>(null);
   const signalingRef = useRef<SignalingService | null>(null);
-  const peerIdRef = useRef<string>(`${userId}-${Date.now()}`);
+  const peerIdRef = useRef<string>(`${localUid}-${Date.now()}`);
+  const [isHost, setIsHost] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -64,8 +78,12 @@ export function VideoRoom({ roomId, userId, onLeave }: VideoRoomProps) {
         await setDoc(
           doc(db, "rooms", roomId, "participants", peerIdRef.current),
           {
-            user_id: userId,
+            uid: localUid,
+            displayName: localDisplayName,
             joined_at: serverTimestamp(),
+            audio: audioEnabled,
+            video: videoEnabled,
+            screen: false,
           }
         );
 
@@ -95,21 +113,49 @@ export function VideoRoom({ roomId, userId, onLeave }: VideoRoomProps) {
         doc(db, "rooms", roomId, "participants", peerIdRef.current)
       ).then();
     };
-  }, [roomId, userId]);
+  }, [roomId, localUid, localDisplayName]);
+
+  // Listen for room metadata (host, is_active)
+  useEffect(() => {
+    const roomRef = doc(db, "rooms", roomId);
+    const unsub = onSnapshot(roomRef, (snap) => {
+      const data = snap.data() as any;
+      if (!data) return;
+      const hostId = data.hostId;
+      const isActive = data.is_active;
+      setIsHost(hostId === localUid);
+      if (isActive === false && !isHost) {
+        // host closed room, leave
+        alert("Host has ended the call");
+        onLeave();
+      }
+    });
+
+    return () => unsub();
+  }, [roomId, localUid, isHost, onLeave]);
 
   const handleToggleAudio = useCallback(() => {
     if (webrtcRef.current) {
-      webrtcRef.current.toggleAudio(!audioEnabled);
-      setAudioEnabled(!audioEnabled);
+      const newState = !audioEnabled;
+      webrtcRef.current.toggleAudio(newState);
+      setAudioEnabled(newState);
+      // update presence
+      updateDoc(doc(db, "rooms", roomId, "participants", peerIdRef.current), {
+        audio: newState,
+      }).catch(() => {});
     }
-  }, [audioEnabled]);
+  }, [audioEnabled, roomId]);
 
   const handleToggleVideo = useCallback(() => {
     if (webrtcRef.current) {
-      webrtcRef.current.toggleVideo(!videoEnabled);
-      setVideoEnabled(!videoEnabled);
+      const newState = !videoEnabled;
+      webrtcRef.current.toggleVideo(newState);
+      setVideoEnabled(newState);
+      updateDoc(doc(db, "rooms", roomId, "participants", peerIdRef.current), {
+        video: newState,
+      }).catch(() => {});
     }
-  }, [videoEnabled]);
+  }, [videoEnabled, roomId]);
 
   const handleToggleScreenShare = useCallback(async () => {
     if (!webrtcRef.current) return;
@@ -177,7 +223,7 @@ export function VideoRoom({ roomId, userId, onLeave }: VideoRoomProps) {
       <VideoGrid
         streams={remoteStreams}
         localStream={localStream}
-        localUserId={userId}
+        localUserId={localUid}
       />
 
       <ControlBar

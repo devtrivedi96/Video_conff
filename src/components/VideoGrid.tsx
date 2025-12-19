@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 interface VideoGridProps {
   streams: Map<string, { stream: MediaStream; userId: string }>;
@@ -6,7 +6,11 @@ interface VideoGridProps {
   localUserId: string;
 }
 
-export function VideoGrid({ streams, localStream, localUserId }: VideoGridProps) {
+export function VideoGrid({
+  streams,
+  localStream,
+  localUserId,
+}: VideoGridProps) {
   const localVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -15,7 +19,12 @@ export function VideoGrid({ streams, localStream, localUserId }: VideoGridProps)
     }
   }, [localStream]);
 
-  const gridCols = streams.size + 1 <= 2 ? 'grid-cols-1' : streams.size + 1 <= 4 ? 'grid-cols-2' : 'grid-cols-3';
+  const gridCols =
+    streams.size + 1 <= 2
+      ? "grid-cols-1"
+      : streams.size + 1 <= 4
+      ? "grid-cols-2"
+      : "grid-cols-3";
 
   return (
     <div className={`grid ${gridCols} gap-4 w-full h-full p-4`}>
@@ -39,12 +48,22 @@ export function VideoGrid({ streams, localStream, localUserId }: VideoGridProps)
   );
 }
 
-function RemoteVideo({ stream, userId }: { stream: MediaStream; userId: string }) {
+function RemoteVideo({
+  stream,
+  userId,
+}: {
+  stream: MediaStream;
+  userId: string;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.srcObject = stream;
+      try {
+        // try to play to satisfy autoplay policies; may be blocked until user interacts
+        videoRef.current.play().catch(() => {});
+      } catch (e) {}
     }
   }, [stream]);
 

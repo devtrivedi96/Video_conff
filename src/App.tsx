@@ -15,7 +15,8 @@ function App() {
   const { user } = useAuth();
   const [currentRoom, setCurrentRoom] = useState<{
     roomId: string;
-    userId: string;
+    uid: string;
+    displayName: string;
   } | null>(null);
 
   const handleCreateRoom = async (roomName: string, userName: string) => {
@@ -27,15 +28,18 @@ function App() {
       const roomsCol = collection(db, "rooms");
       const docRef = await addDoc(roomsCol, {
         name: roomName,
-        created_by: userName,
+        created_by: user.displayName ?? user.email ?? user.uid,
         created_at: serverTimestamp(),
         is_active: true,
+        hostId: user.uid,
       });
 
-      const display = user
-        ? user.displayName ?? user.email ?? user.uid
-        : userName;
-      setCurrentRoom({ roomId: docRef.id, userId: display });
+      const display = user.displayName ?? user.email ?? user.uid;
+      setCurrentRoom({
+        roomId: docRef.id,
+        uid: user.uid,
+        displayName: display,
+      });
     } catch (error) {
       console.error("Error creating room:", error);
       alert("Failed to create room. Please try again.");
@@ -54,10 +58,8 @@ function App() {
         return;
       }
 
-      const displayJoin = user
-        ? user.displayName ?? user.email ?? user.uid
-        : userName;
-      setCurrentRoom({ roomId, userId: displayJoin });
+      const displayJoin = user.displayName ?? user.email ?? user.uid;
+      setCurrentRoom({ roomId, uid: user.uid, displayName: displayJoin });
     } catch (error) {
       console.error("Error joining room:", error);
       alert("Failed to join room. Please try again.");
@@ -79,7 +81,8 @@ function App() {
     return (
       <VideoRoom
         roomId={currentRoom.roomId}
-        userId={currentRoom.userId}
+        localUid={currentRoom.uid}
+        localDisplayName={currentRoom.displayName}
         onLeave={handleLeaveRoom}
       />
     );
