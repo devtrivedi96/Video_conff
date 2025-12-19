@@ -15,6 +15,7 @@ export class SignalingService {
   private peerId: string;
   private webrtc: WebRTCManager;
   private unsubscribe: (() => void) | null = null;
+  private pendingAnswers: Map<string, RTCSessionDescriptionInit[]> = new Map();
 
   constructor(roomId: string, peerId: string, webrtc: WebRTCManager) {
     this.roomId = roomId;
@@ -113,6 +114,24 @@ export class SignalingService {
       this.broadcastSignal(remotePeerId, "ice-candidate", candidate.toJSON());
     });
 
+    // attach signalingstatechange handler to flush any pending answers
+    const pc = this.webrtc.getPeerConnection(remotePeerId);
+    if (pc) {
+      pc.onsignalingstatechange = () => {
+        try {
+          if (pc.signalingState === "have-local-offer") {
+            this.log(
+              "onsignalingstatechange: have-local-offer for",
+              remotePeerId
+            );
+            this.flushPendingAnswers(remotePeerId);
+          }
+        } catch (e) {
+          this.log("onsignalingstatechange error", e);
+        }
+      };
+    }
+
     const offer = await this.webrtc.createOffer(remotePeerId);
     this.log("created offer for", remotePeerId, offer.type);
     await this.broadcastSignal(remotePeerId, "offer", offer);
@@ -137,21 +156,41 @@ export class SignalingService {
   ) {
     const pc = this.webrtc.getPeerConnection(fromPeerId);
     if (!pc) {
-      this.log("handleAnswer: no peerConnection for", fromPeerId);
+      this.log(
+        "handleAnswer: no peerConnection for",
+        fromPeerId,
+        "-- queuing answer"
+      );
+      const arr = this.pendingAnswers.get(fromPeerId) || [];
+      arr.push(answer);
+      this.pendingAnswers.set(fromPeerId, arr);
       return;
     }
 
-    // Only apply answer if we are in have-local-offer state
+    // If not in have-local-offer, queue the answer and wait for signaling state change
     if (pc.signalingState !== "have-local-offer") {
       this.log(
-        "handleAnswer: ignoring answer because signalingState is",
+        "handleAnswer: queuing answer because signalingState is",
         pc.signalingState
       );
+      const arr = this.pendingAnswers.get(fromPeerId) || [];
+      arr.push(answer);
+      this.pendingAnswers.set(fromPeerId, arr);
       return;
     }
 
+    await this.applyAnswerWithRollback(fromPeerId, answer);
+  }
+
+  private async applyAnswerWithRollback(
+    fromPeerId: string,
+    answer: RTCSessionDescriptionInit
+  ) {
+    const pc = this.webrtc.getPeerConnection(fromPeerId);
+    if (!pc) return;
     try {
       await this.webrtc.setRemoteDescription(fromPeerId, answer);
+      this.log("Applied answer for", fromPeerId);
     } catch (err: any) {
       this.log("Error setting remote description (answer):", err?.name || err);
       // Attempt SDP rollback if supported
@@ -169,6 +208,16 @@ export class SignalingService {
         this.webrtc.removePeerConnection(fromPeerId);
       }
     }
+  }
+
+  private async flushPendingAnswers(peerId: string) {
+    const arr = this.pendingAnswers.get(peerId) || [];
+    if (!arr.length) return;
+    this.log("Flushing", arr.length, "pending answers for", peerId);
+    for (const ans of arr) {
+      await this.applyAnswerWithRollback(peerId, ans);
+    }
+    this.pendingAnswers.delete(peerId);
   }
 
   private async handleIceCandidate(
