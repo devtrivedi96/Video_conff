@@ -6,6 +6,7 @@ import {
   signOut as firebaseSignOut,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  updateProfile,
   type User,
 } from "firebase/auth";
 import { auth } from "./firebase";
@@ -71,9 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateDisplayName = async (displayName: string) => {
     if (!auth.currentUser) throw new Error("No authenticated user");
     try {
-      await import("firebase/auth").then(({ updateProfile }) =>
-        updateProfile(auth.currentUser!, { displayName })
-      );
+      await updateProfile(auth.currentUser!, { displayName });
     } catch (err) {
       console.error("Failed to update display name", err);
       throw err;

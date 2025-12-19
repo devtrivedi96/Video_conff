@@ -16,6 +16,7 @@ export class SignalingService {
   private webrtc: WebRTCManager;
   private unsubscribe: (() => void) | null = null;
   private pendingAnswers: Map<string, RTCSessionDescriptionInit[]> = new Map();
+  private pendingTimers: Map<string, any> = new Map();
 
   constructor(roomId: string, peerId: string, webrtc: WebRTCManager) {
     this.roomId = roomId;
@@ -164,6 +165,23 @@ export class SignalingService {
       const arr = this.pendingAnswers.get(fromPeerId) || [];
       arr.push(answer);
       this.pendingAnswers.set(fromPeerId, arr);
+      // schedule a retry: if answer queued >2s and we are the initiator, re-initiate
+      if (!this.pendingTimers.get(fromPeerId)) {
+        const t = setTimeout(async () => {
+          try {
+            const queued = this.pendingAnswers.get(fromPeerId) || [];
+            if (queued.length && this.peerId > fromPeerId) {
+              this.log("pending answer timeout: re-initiating to", fromPeerId);
+              await this.initiateConnection(fromPeerId);
+            }
+          } catch (e) {
+            this.log("re-initiate error", e);
+          } finally {
+            this.pendingTimers.delete(fromPeerId);
+          }
+        }, 2000);
+        this.pendingTimers.set(fromPeerId, t);
+      }
       return;
     }
 
@@ -218,6 +236,11 @@ export class SignalingService {
       await this.applyAnswerWithRollback(peerId, ans);
     }
     this.pendingAnswers.delete(peerId);
+    const t = this.pendingTimers.get(peerId);
+    if (t) {
+      clearTimeout(t);
+      this.pendingTimers.delete(peerId);
+    }
   }
 
   private async handleIceCandidate(
