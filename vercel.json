@@ -10,12 +10,9 @@
     { "handle": "filesystem" },
     {
       "src": "/(.*)",
-      "headers": [
-        {
-          "key": "Cross-Origin-Opener-Policy",
-          "value": "same-origin-allow-popups"
-        }
-      ],
+      "headers": {
+        "Cross-Origin-Opener-Policy": "same-origin-allow-popups"
+      },
       "continue": true
     },
     { "src": "/(.*)", "dest": "/index.html" }
