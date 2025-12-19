@@ -22,6 +22,10 @@ export class SignalingService {
     this.webrtc = webrtc;
   }
 
+  private log(...args: any[]) {
+    console.debug(new Date().toISOString(), "SignalingService:", ...args);
+  }
+
   async initialize() {
     const signalsRef = collection(db, "rooms", this.roomId, "signals");
     const q = query(signalsRef, orderBy("created_at"));
@@ -36,7 +40,7 @@ export class SignalingService {
         if (from_peer_id === this.peerId) return; // ignore our own signals
         if (to_peer_id && to_peer_id !== this.peerId) return; // not for us
 
-        console.debug("SignalingService: received signal", {
+        this.log("received signal", {
           from: from_peer_id,
           to: to_peer_id,
           type: signal_type,
@@ -67,25 +71,18 @@ export class SignalingService {
       "participants"
     );
     const snapshot = await getDocs(participantsRef);
-    console.debug("SignalingService: found participants", snapshot.size);
+    this.log("found participants", snapshot.size);
     snapshot.forEach((doc) => {
       const remoteId = doc.id;
-      console.debug("SignalingService: participant doc", remoteId);
+      this.log("participant doc", remoteId);
       if (remoteId === this.peerId) return;
       // deterministic initiator to avoid glare: only the peer with lexicographically
       // larger id will initiate when both are present during startup
       if (this.peerId > remoteId) {
-        console.debug(
-          "SignalingService: initiating to existing participant",
-          remoteId
-        );
+        this.log("initiating to existing participant", remoteId);
         this.initiateConnection(remoteId);
       } else {
-        console.debug(
-          "SignalingService: skipping initiate to",
-          remoteId,
-          "(peerId <= remoteId)"
-        );
+        this.log("skipping initiate to", remoteId, "(peerId <= remoteId)");
       }
     });
   }
@@ -94,16 +91,10 @@ export class SignalingService {
     if (fromPeerId === this.peerId) return;
     // deterministic initiator: only initiate if our peerId is greater
     if (this.peerId > fromPeerId) {
-      console.debug(
-        "SignalingService: handleUserJoined initiating to",
-        fromPeerId
-      );
+      this.log("handleUserJoined initiating to", fromPeerId);
       await this.initiateConnection(fromPeerId);
     } else {
-      console.debug(
-        "SignalingService: handleUserJoined skipping initiate for",
-        fromPeerId
-      );
+      this.log("handleUserJoined skipping initiate for", fromPeerId);
     }
   }
 
@@ -116,22 +107,14 @@ export class SignalingService {
       );
       return;
     }
-    console.debug("SignalingService: initiating connection to", remotePeerId);
+    this.log("initiating connection to", remotePeerId);
     await this.webrtc.createPeerConnection(remotePeerId, (candidate) => {
-      console.debug(
-        "SignalingService: local ice candidate for",
-        remotePeerId,
-        candidate
-      );
+      this.log("local ice candidate for", remotePeerId, candidate);
       this.broadcastSignal(remotePeerId, "ice-candidate", candidate.toJSON());
     });
 
     const offer = await this.webrtc.createOffer(remotePeerId);
-    console.debug(
-      "SignalingService: created offer for",
-      remotePeerId,
-      offer.type
-    );
+    this.log("created offer for", remotePeerId, offer.type);
     await this.broadcastSignal(remotePeerId, "offer", offer);
   }
 

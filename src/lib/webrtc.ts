@@ -24,6 +24,10 @@ export class WebRTCManager {
     this.onPeerDisconnectedCallback = callback;
   }
 
+  private log(...args: any[]) {
+    console.debug(new Date().toISOString(), "WebRTCManager:", ...args);
+  }
+
   setOnScreenStopped(callback: () => void) {
     this.onScreenStoppedCallback = callback;
   }
@@ -83,7 +87,7 @@ export class WebRTCManager {
     onIceCandidate: (candidate: RTCIceCandidate) => void
   ): Promise<RTCPeerConnection> {
     const pc = new RTCPeerConnection(ICE_SERVERS);
-    console.debug("WebRTCManager: creating peer connection for", peerId);
+    this.log("creating peer connection for", peerId);
 
     pc.onicecandidate = (event) => {
       if (event.candidate) {
@@ -113,8 +117,8 @@ export class WebRTCManager {
       this.localStream.getTracks().forEach((track) => {
         pc.addTrack(track, this.localStream!);
       });
-      console.debug(
-        "WebRTCManager: local tracks added for",
+      this.log(
+        "local tracks added for",
         peerId,
         this.localStream?.getTracks().map((t) => t.kind)
       );

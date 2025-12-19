@@ -317,6 +317,9 @@ export function VideoRoom({
     setPermissionDenied(`Diagnostics: ${results.slice(0, 8).join(" | ")}`);
   };
 
+  // expose diagnostics to window for manual invocation from console
+  (window as any).runDiagnostics = runDiagnostics;
+
   const handleLeave = useCallback(() => {
     if (signalingRef.current) {
       signalingRef.current.cleanup();
@@ -373,6 +376,13 @@ export function VideoRoom({
                 className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
               >
                 Enable Camera & Microphone
+              </button>
+              <button
+                onClick={runDiagnostics}
+                className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
+                title="Run diagnostics to gather camera/mic/device state"
+              >
+                Run Diagnostics
               </button>
             </div>
           </div>
