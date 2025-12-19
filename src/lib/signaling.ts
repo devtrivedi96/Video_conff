@@ -36,6 +36,12 @@ export class SignalingService {
         if (from_peer_id === this.peerId) return; // ignore our own signals
         if (to_peer_id && to_peer_id !== this.peerId) return; // not for us
 
+        console.debug("SignalingService: received signal", {
+          from: from_peer_id,
+          to: to_peer_id,
+          type: signal_type,
+        });
+
         try {
           if (signal_type === "offer") {
             await this.handleOffer(from_peer_id, signal_data);
@@ -61,24 +67,71 @@ export class SignalingService {
       "participants"
     );
     const snapshot = await getDocs(participantsRef);
+    console.debug("SignalingService: found participants", snapshot.size);
     snapshot.forEach((doc) => {
-      if (doc.id !== this.peerId) {
-        // doc.id is the peer id (we store participants with peerId as doc id)
-        this.initiateConnection(doc.id);
+      const remoteId = doc.id;
+      console.debug("SignalingService: participant doc", remoteId);
+      if (remoteId === this.peerId) return;
+      // deterministic initiator to avoid glare: only the peer with lexicographically
+      // larger id will initiate when both are present during startup
+      if (this.peerId > remoteId) {
+        console.debug(
+          "SignalingService: initiating to existing participant",
+          remoteId
+        );
+        this.initiateConnection(remoteId);
+      } else {
+        console.debug(
+          "SignalingService: skipping initiate to",
+          remoteId,
+          "(peerId <= remoteId)"
+        );
       }
     });
   }
 
   private async handleUserJoined(fromPeerId: string) {
-    await this.initiateConnection(fromPeerId);
+    if (fromPeerId === this.peerId) return;
+    // deterministic initiator: only initiate if our peerId is greater
+    if (this.peerId > fromPeerId) {
+      console.debug(
+        "SignalingService: handleUserJoined initiating to",
+        fromPeerId
+      );
+      await this.initiateConnection(fromPeerId);
+    } else {
+      console.debug(
+        "SignalingService: handleUserJoined skipping initiate for",
+        fromPeerId
+      );
+    }
   }
 
   private async initiateConnection(remotePeerId: string) {
+    // avoid duplicate initiation if a peer connection already exists
+    if (this.webrtc.getPeerConnection(remotePeerId)) {
+      console.debug(
+        "SignalingService: peerConnection already exists for",
+        remotePeerId
+      );
+      return;
+    }
+    console.debug("SignalingService: initiating connection to", remotePeerId);
     await this.webrtc.createPeerConnection(remotePeerId, (candidate) => {
+      console.debug(
+        "SignalingService: local ice candidate for",
+        remotePeerId,
+        candidate
+      );
       this.broadcastSignal(remotePeerId, "ice-candidate", candidate.toJSON());
     });
 
     const offer = await this.webrtc.createOffer(remotePeerId);
+    console.debug(
+      "SignalingService: created offer for",
+      remotePeerId,
+      offer.type
+    );
     await this.broadcastSignal(remotePeerId, "offer", offer);
   }
 

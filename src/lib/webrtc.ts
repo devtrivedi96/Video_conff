@@ -1,7 +1,7 @@
 const ICE_SERVERS = {
   iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
   ],
 };
 
@@ -9,7 +9,11 @@ export class WebRTCManager {
   private peerConnections: Map<string, RTCPeerConnection> = new Map();
   private localStream: MediaStream | null = null;
   private screenStream: MediaStream | null = null;
-  private onRemoteStreamCallback?: (peerId: string, stream: MediaStream) => void;
+  private onScreenStoppedCallback?: () => void;
+  private onRemoteStreamCallback?: (
+    peerId: string,
+    stream: MediaStream
+  ) => void;
   private onPeerDisconnectedCallback?: (peerId: string) => void;
 
   setOnRemoteStream(callback: (peerId: string, stream: MediaStream) => void) {
@@ -20,7 +24,14 @@ export class WebRTCManager {
     this.onPeerDisconnectedCallback = callback;
   }
 
-  async getLocalStream(video: boolean = true, audio: boolean = true): Promise<MediaStream> {
+  setOnScreenStopped(callback: () => void) {
+    this.onScreenStoppedCallback = callback;
+  }
+
+  async getLocalStream(
+    video: boolean = true,
+    audio: boolean = true
+  ): Promise<MediaStream> {
     if (this.localStream) {
       return this.localStream;
     }
@@ -39,9 +50,19 @@ export class WebRTCManager {
       audio: true,
     });
 
-    this.screenStream.getVideoTracks()[0].onended = () => {
+    const videoTrack = this.screenStream.getVideoTracks()[0];
+    videoTrack.onended = () => {
+      // Stop and restore original camera track for all peers
       this.stopScreenSharing();
+      // replace with local camera track if available
+      this.replaceVideoTrack(false).catch(() => {});
+      this.onScreenStoppedCallback?.();
     };
+
+    console.debug(
+      "WebRTCManager: obtained screen stream",
+      this.screenStream.id
+    );
 
     return this.screenStream;
   }
@@ -52,7 +73,7 @@ export class WebRTCManager {
 
   stopScreenSharing() {
     if (this.screenStream) {
-      this.screenStream.getTracks().forEach(track => track.stop());
+      this.screenStream.getTracks().forEach((track) => track.stop());
       this.screenStream = null;
     }
   }
@@ -62,6 +83,7 @@ export class WebRTCManager {
     onIceCandidate: (candidate: RTCIceCandidate) => void
   ): Promise<RTCPeerConnection> {
     const pc = new RTCPeerConnection(ICE_SERVERS);
+    console.debug("WebRTCManager: creating peer connection for", peerId);
 
     pc.onicecandidate = (event) => {
       if (event.candidate) {
@@ -71,21 +93,31 @@ export class WebRTCManager {
 
     pc.ontrack = (event) => {
       if (event.streams && event.streams[0]) {
+        console.debug("WebRTCManager ontrack", peerId, event.streams[0].id);
         this.onRemoteStreamCallback?.(peerId, event.streams[0]);
       }
     };
 
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+      if (
+        pc.connectionState === "disconnected" ||
+        pc.connectionState === "failed" ||
+        pc.connectionState === "closed"
+      ) {
         this.onPeerDisconnectedCallback?.(peerId);
         this.removePeerConnection(peerId);
       }
     };
 
     if (this.localStream) {
-      this.localStream.getTracks().forEach(track => {
+      this.localStream.getTracks().forEach((track) => {
         pc.addTrack(track, this.localStream!);
       });
+      console.debug(
+        "WebRTCManager: local tracks added for",
+        peerId,
+        this.localStream?.getTracks().map((t) => t.kind)
+      );
     }
 
     this.peerConnections.set(peerId, pc);
@@ -106,7 +138,7 @@ export class WebRTCManager {
 
   async createOffer(peerId: string): Promise<RTCSessionDescriptionInit> {
     const pc = this.peerConnections.get(peerId);
-    if (!pc) throw new Error('Peer connection not found');
+    if (!pc) throw new Error("Peer connection not found");
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
@@ -115,30 +147,33 @@ export class WebRTCManager {
 
   async createAnswer(peerId: string): Promise<RTCSessionDescriptionInit> {
     const pc = this.peerConnections.get(peerId);
-    if (!pc) throw new Error('Peer connection not found');
+    if (!pc) throw new Error("Peer connection not found");
 
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
     return answer;
   }
 
-  async setRemoteDescription(peerId: string, description: RTCSessionDescriptionInit) {
+  async setRemoteDescription(
+    peerId: string,
+    description: RTCSessionDescriptionInit
+  ) {
     const pc = this.peerConnections.get(peerId);
-    if (!pc) throw new Error('Peer connection not found');
+    if (!pc) throw new Error("Peer connection not found");
 
     await pc.setRemoteDescription(new RTCSessionDescription(description));
   }
 
   async addIceCandidate(peerId: string, candidate: RTCIceCandidateInit) {
     const pc = this.peerConnections.get(peerId);
-    if (!pc) throw new Error('Peer connection not found');
+    if (!pc) throw new Error("Peer connection not found");
 
     await pc.addIceCandidate(new RTCIceCandidate(candidate));
   }
 
   toggleAudio(enabled: boolean) {
     if (this.localStream) {
-      this.localStream.getAudioTracks().forEach(track => {
+      this.localStream.getAudioTracks().forEach((track) => {
         track.enabled = enabled;
       });
     }
@@ -146,7 +181,7 @@ export class WebRTCManager {
 
   toggleVideo(enabled: boolean) {
     if (this.localStream) {
-      this.localStream.getVideoTracks().forEach(track => {
+      this.localStream.getVideoTracks().forEach((track) => {
         track.enabled = enabled;
       });
     }
@@ -158,26 +193,35 @@ export class WebRTCManager {
 
     const videoTrack = stream.getVideoTracks()[0];
 
-    this.peerConnections.forEach(pc => {
+    console.debug(
+      "WebRTCManager.replaceVideoTrack: replacing with track",
+      videoTrack.id
+    );
+    this.peerConnections.forEach((pc) => {
       const senders = pc.getSenders();
-      const videoSender = senders.find(sender => sender.track?.kind === 'video');
+      const videoSender = senders.find(
+        (sender) => sender.track?.kind === "video"
+      );
       if (videoSender) {
         videoSender.replaceTrack(videoTrack);
+      } else if (pc && videoTrack) {
+        // fallback: add track if no sender exists yet
+        pc.addTrack(videoTrack, stream);
       }
     });
   }
 
   cleanup() {
-    this.peerConnections.forEach(pc => pc.close());
+    this.peerConnections.forEach((pc) => pc.close());
     this.peerConnections.clear();
 
     if (this.localStream) {
-      this.localStream.getTracks().forEach(track => track.stop());
+      this.localStream.getTracks().forEach((track) => track.stop());
       this.localStream = null;
     }
 
     if (this.screenStream) {
-      this.screenStream.getTracks().forEach(track => track.stop());
+      this.screenStream.getTracks().forEach((track) => track.stop());
       this.screenStream = null;
     }
   }
