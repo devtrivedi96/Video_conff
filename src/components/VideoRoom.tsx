@@ -340,28 +340,34 @@ export function VideoRoom({
   }, [roomId]);
 
   return (
-    <div className="min-h-screen bg-slate-900 relative">
-      <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-6 py-3 flex items-center gap-3">
-          <span className="text-white font-medium">Room ID:</span>
-          <code className="text-blue-300 font-mono">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 relative">
+      <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-10">
+        {/* Room ID Badge */}
+        <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-xl border border-white/10 hover:border-blue-400/50 rounded-full px-6 py-3 flex items-center gap-3 transition-all duration-300 shadow-lg">
+          <span className="text-white font-semibold text-sm">Room ID:</span>
+          <code className="text-blue-300 font-mono font-bold tracking-wider">
             {roomId.slice(0, 8)}...
           </code>
           <button
             onClick={copyRoomId}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            className="p-2 hover:bg-white/10 rounded-full transition-all duration-200 hover:scale-110"
             title="Copy Room ID"
           >
             {copied ? (
               <Check size={16} className="text-green-400" />
             ) : (
-              <Copy size={16} className="text-white" />
+              <Copy size={16} className="text-white/70 hover:text-white" />
             )}
           </button>
         </div>
-        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-6 py-3 text-white">
-          {remoteStreams.size + 1} participant
-          {remoteStreams.size !== 0 ? "s" : ""}
+
+        {/* Participants Badge */}
+        <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-xl border border-white/10 hover:border-green-400/50 rounded-full px-6 py-3 text-white font-semibold shadow-lg transition-all duration-300">
+          <span className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse" />
+            {remoteStreams.size + 1} participant
+            {remoteStreams.size !== 0 ? "s" : ""}
+          </span>
         </div>
       </div>
 

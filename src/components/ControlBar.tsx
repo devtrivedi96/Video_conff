@@ -1,4 +1,12 @@
-import { Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, PhoneOff } from 'lucide-react';
+import {
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  Monitor,
+  MonitorOff,
+  PhoneOff,
+} from "lucide-react";
 
 interface ControlBarProps {
   audioEnabled: boolean;
@@ -20,52 +28,63 @@ export function ControlBar({
   onLeaveCall,
 }: ControlBarProps) {
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 rounded-full px-6 py-4 shadow-2xl flex items-center gap-4">
-      <button
-        onClick={onToggleAudio}
-        className={`p-4 rounded-full transition-all ${
-          audioEnabled
-            ? 'bg-gray-700 hover:bg-gray-600 text-white'
-            : 'bg-red-500 hover:bg-red-600 text-white'
-        }`}
-        title={audioEnabled ? 'Mute' : 'Unmute'}
-      >
-        {audioEnabled ? <Mic size={24} /> : <MicOff size={24} />}
-      </button>
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40">
+      <div className="flex items-center gap-3 bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-full px-8 py-4 shadow-2xl backdrop-blur-sm border border-white/10 hover:border-white/20 transition-all duration-300">
+        {/* Audio Toggle */}
+        <button
+          onClick={onToggleAudio}
+          className={`p-3 rounded-full transition-all duration-200 font-semibold ${
+            audioEnabled
+              ? "bg-gradient-to-br from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 text-white shadow-lg"
+              : "bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white shadow-lg"
+          }`}
+          title={audioEnabled ? "Mute" : "Unmute"}
+          aria-label={audioEnabled ? "Mute" : "Unmute"}
+        >
+          {audioEnabled ? <Mic size={22} /> : <MicOff size={22} />}
+        </button>
 
-      <button
-        onClick={onToggleVideo}
-        className={`p-4 rounded-full transition-all ${
-          videoEnabled
-            ? 'bg-gray-700 hover:bg-gray-600 text-white'
-            : 'bg-red-500 hover:bg-red-600 text-white'
-        }`}
-        title={videoEnabled ? 'Stop Video' : 'Start Video'}
-      >
-        {videoEnabled ? <Video size={24} /> : <VideoOff size={24} />}
-      </button>
+        {/* Video Toggle */}
+        <button
+          onClick={onToggleVideo}
+          className={`p-3 rounded-full transition-all duration-200 font-semibold ${
+            videoEnabled
+              ? "bg-gradient-to-br from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 text-white shadow-lg"
+              : "bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white shadow-lg"
+          }`}
+          title={videoEnabled ? "Stop Video" : "Start Video"}
+          aria-label={videoEnabled ? "Stop Video" : "Start Video"}
+        >
+          {videoEnabled ? <Video size={22} /> : <VideoOff size={22} />}
+        </button>
 
-      <button
-        onClick={onToggleScreenShare}
-        className={`p-4 rounded-full transition-all ${
-          screenSharing
-            ? 'bg-blue-500 hover:bg-blue-600 text-white'
-            : 'bg-gray-700 hover:bg-gray-600 text-white'
-        }`}
-        title={screenSharing ? 'Stop Sharing' : 'Share Screen'}
-      >
-        {screenSharing ? <MonitorOff size={24} /> : <Monitor size={24} />}
-      </button>
+        {/* Screen Share Toggle */}
+        <button
+          onClick={onToggleScreenShare}
+          className={`p-3 rounded-full transition-all duration-200 font-semibold ${
+            screenSharing
+              ? "bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white shadow-lg"
+              : "bg-gradient-to-br from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 text-white shadow-lg"
+          }`}
+          title={screenSharing ? "Stop Sharing" : "Share Screen"}
+          aria-label={screenSharing ? "Stop Sharing" : "Share Screen"}
+        >
+          {screenSharing ? <MonitorOff size={22} /> : <Monitor size={22} />}
+        </button>
 
-      <div className="w-px h-10 bg-gray-600" />
+        {/* Divider */}
+        <div className="w-px h-8 bg-white/10" />
 
-      <button
-        onClick={onLeaveCall}
-        className="p-4 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all"
-        title="Leave Call"
-      >
-        <PhoneOff size={24} />
-      </button>
+        {/* Leave Call */}
+        <button
+          onClick={onLeaveCall}
+          className="p-3 rounded-full bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white transition-all duration-200 shadow-lg font-semibold"
+          title="Leave Call"
+          aria-label="Leave Call"
+        >
+          <PhoneOff size={22} />
+        </button>
+      </div>
     </div>
   );
 }

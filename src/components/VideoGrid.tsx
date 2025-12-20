@@ -27,8 +27,10 @@ export function VideoGrid({
       : "grid-cols-3";
 
   return (
-    <div className={`grid ${gridCols} gap-4 w-full h-full p-4`}>
-      <div className="relative bg-gray-900 rounded-lg overflow-hidden shadow-lg">
+    <div
+      className={`grid ${gridCols} gap-6 w-full h-full p-6 bg-gradient-to-b from-slate-950 to-slate-900`}
+    >
+      <div className="relative bg-slate-800 rounded-xl overflow-hidden shadow-2xl ring-2 ring-slate-700 hover:ring-blue-500 transition-all duration-300 group">
         <video
           ref={localVideoRef}
           autoPlay
@@ -36,8 +38,13 @@ export function VideoGrid({
           muted
           className="w-full h-full object-cover"
         />
-        <div className="absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded-full text-white text-sm">
-          You ({localUserId})
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-medium ring-1 ring-white/20">
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+          You
+        </div>
+        <div className="absolute top-4 right-4 bg-blue-500/80 backdrop-blur-sm px-3 py-1 rounded-full text-white text-xs font-semibold">
+          Local
         </div>
       </div>
 
@@ -61,21 +68,22 @@ function RemoteVideo({
     if (videoRef.current) {
       videoRef.current.srcObject = stream;
       try {
-        // try to play to satisfy autoplay policies; may be blocked until user interacts
         videoRef.current.play().catch(() => {});
       } catch (e) {}
     }
   }, [stream]);
 
   return (
-    <div className="relative bg-gray-900 rounded-lg overflow-hidden shadow-lg">
+    <div className="relative bg-slate-800 rounded-xl overflow-hidden shadow-2xl ring-2 ring-slate-700 hover:ring-green-500 transition-all duration-300 group">
       <video
         ref={videoRef}
         autoPlay
         playsInline
         className="w-full h-full object-cover"
       />
-      <div className="absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded-full text-white text-sm">
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-medium ring-1 ring-white/20">
+        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
         {userId}
       </div>
     </div>

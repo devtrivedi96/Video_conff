@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../lib/auth";
+import { Mail, Lock, AlertCircle, Check } from "lucide-react";
 
 export function SignUp({
   onBack,
@@ -24,6 +25,10 @@ export function SignUp({
       setError("Passwords do not match");
       return;
     }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
     setLoading(true);
     try {
       await signUpWithEmail(email, password);
@@ -35,67 +40,119 @@ export function SignUp({
     }
   };
 
+  const passwordsMatch = password && confirm && password === confirm;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-8 max-w-md w-full text-white">
-        <h2 className="text-2xl font-bold mb-4">Create account</h2>
-        {error && <div className="text-sm text-red-400 mb-3">{error}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 rounded bg-white/5 border border-white/10"
-            />
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-96 h-96 bg-green-500/10 rounded-full blur-3xl -z-10 animate-pulse" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl -z-10 animate-pulse" />
+
+      <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl border border-white/10 rounded-3xl p-10 max-w-md w-full text-white shadow-2xl">
+        <h2 className="text-4xl font-bold mb-2">Get Started</h2>
+        <p className="text-gray-400 mb-8">
+          Create your account to start video calling
+        </p>
+
+        {error && (
+          <div className="flex items-center gap-2 bg-red-500/20 border border-red-500/50 text-red-200 text-sm mb-4 p-3 rounded-lg">
+            <AlertCircle size={16} />
+            {error}
           </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-3 py-2 rounded bg-white/5 border border-white/10"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">
-              Confirm password
+            <label className="block text-sm font-semibold text-gray-300 mb-2">
+              Email Address
             </label>
-            <input
-              type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              required
-              className="w-full px-3 py-2 rounded bg-white/5 border border-white/10"
-            />
+            <div className="relative">
+              <Mail
+                size={18}
+                className="absolute left-3 top-3.5 text-gray-500"
+              />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-4 py-3 pl-10 rounded-xl bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-white placeholder-gray-500 transition-all duration-200"
+                placeholder="your@email.com"
+              />
+            </div>
           </div>
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onBack}
-              className="flex-1 px-4 py-2 bg-white/10 rounded"
-            >
-              Back
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 px-4 py-2 bg-green-500 rounded text-white"
-            >
-              {loading ? "Creating..." : "Create account"}
-            </button>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-300 mb-2">
+              Password
+            </label>
+            <div className="relative">
+              <Lock
+                size={18}
+                className="absolute left-3 top-3.5 text-gray-500"
+              />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-4 py-3 pl-10 rounded-xl bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-white placeholder-gray-500 transition-all duration-200"
+                placeholder="At least 6 characters"
+              />
+            </div>
           </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-300 mb-2">
+              Confirm Password
+            </label>
+            <div className="relative">
+              <Lock
+                size={18}
+                className="absolute left-3 top-3.5 text-gray-500"
+              />
+              <input
+                type="password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                required
+                className="w-full px-4 py-3 pl-10 rounded-xl bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-white placeholder-gray-500 transition-all duration-200"
+                placeholder="Confirm your password"
+              />
+              {passwordsMatch && (
+                <Check
+                  size={18}
+                  className="absolute right-3 top-3.5 text-green-400"
+                />
+              )}
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 rounded-lg text-white font-semibold transition-all duration-200 shadow-lg hover:shadow-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? "Creating account..." : "Create Account"}
+          </button>
         </form>
-        <div className="mt-4 text-sm text-gray-300 text-center">
+
+        <div className="mt-6 text-sm text-gray-400 text-center">
           Already have an account?{" "}
-          <button onClick={onSignIn} className="underline">
+          <button
+            onClick={onSignIn}
+            className="text-green-400 hover:text-green-300 font-semibold transition-colors"
+          >
             Sign in
           </button>
         </div>
+
+        <button
+          type="button"
+          onClick={onBack}
+          className="w-full mt-4 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-gray-300 font-semibold transition-all duration-200"
+        >
+          Back
+        </button>
       </div>
     </div>
   );

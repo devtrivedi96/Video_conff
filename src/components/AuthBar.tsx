@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../lib/auth";
 import ProfileSettings from "./ProfileSettings";
+import { LogOut, User } from "lucide-react";
 
 export function AuthBar() {
   const { user, loading, signOut } = useAuth();
@@ -13,12 +14,13 @@ export function AuthBar() {
   if (!user) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50">
+    <div className="fixed top-6 right-6 z-50">
       <div className="relative">
         <button
           onClick={() => setOpen((v) => !v)}
-          className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/10 bg-white/5 flex items-center justify-center"
+          className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-blue-500/50 hover:ring-blue-400 bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-blue-500/50 font-semibold text-white"
           aria-label="Open profile"
+          title={user.displayName || user.email || "Profile"}
         >
           {user.photoURL ? (
             <img
@@ -27,35 +29,39 @@ export function AuthBar() {
               className="w-full h-full object-cover"
             />
           ) : (
-            <span className="text-sm font-semibold text-white">
-              {(user.displayName ?? user.email ?? "U")[0]}
+            <span className="text-lg font-bold">
+              {(user.displayName ?? user.email ?? "U")[0].toUpperCase()}
             </span>
           )}
         </button>
 
         {open && (
-          <div className="absolute right-0 mt-2 w-48 bg-white/5 backdrop-blur rounded-lg border border-white/10 text-white shadow-lg py-2">
-            <div className="px-3 py-2 text-sm">
-              {user.displayName ?? user.email}
+          <div className="absolute right-0 mt-3 w-56 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl border border-white/10 text-white shadow-2xl rounded-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="px-4 py-4 border-b border-white/10">
+              <p className="text-sm font-semibold text-gray-200">
+                {user.displayName || "Guest"}
+              </p>
+              <p className="text-xs text-gray-400 truncate">{user.email}</p>
             </div>
-            <div className="border-t border-white/5" />
-            <button
-              onClick={() => {
-                setOpen(false);
-                signOut();
-              }}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-white/10"
-            >
-              Sign out
-            </button>
             <button
               onClick={() => {
                 setOpen(false);
                 setShowProfile(true);
               }}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-white/10"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/10 transition-colors text-left"
             >
+              <User size={16} />
               Profile / Settings
+            </button>
+            <button
+              onClick={() => {
+                setOpen(false);
+                signOut();
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-red-500/20 text-red-300 transition-colors text-left border-t border-white/10"
+            >
+              <LogOut size={16} />
+              Sign out
             </button>
           </div>
         )}
