@@ -28,61 +28,75 @@ export function ControlBar({
   onLeaveCall,
 }: ControlBarProps) {
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40">
-      <div className="flex items-center gap-3 bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-full px-8 py-4 shadow-2xl backdrop-blur-sm border border-white/10 hover:border-white/20 transition-all duration-300">
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent p-6">
+      <div className="flex items-center justify-center gap-4">
         {/* Audio Toggle */}
         <button
           onClick={onToggleAudio}
-          className={`p-3 rounded-full transition-all duration-200 font-semibold ${
+          className={`p-4 rounded-full transition-all duration-200 font-semibold group relative ${
             audioEnabled
-              ? "bg-gradient-to-br from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 text-white shadow-lg"
-              : "bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white shadow-lg"
+              ? "bg-gradient-to-br from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 text-white shadow-lg hover:shadow-xl hover:scale-110"
+              : "bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white shadow-lg hover:shadow-xl hover:scale-110"
           }`}
-          title={audioEnabled ? "Mute" : "Unmute"}
+          title={audioEnabled ? "Mute (Alt+A)" : "Unmute (Alt+A)"}
           aria-label={audioEnabled ? "Mute" : "Unmute"}
         >
-          {audioEnabled ? <Mic size={22} /> : <MicOff size={22} />}
+          {audioEnabled ? <Mic size={24} /> : <MicOff size={24} />}
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-3 py-1 rounded-full whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            {audioEnabled ? "Mute" : "Unmute"}
+          </div>
         </button>
 
         {/* Video Toggle */}
         <button
           onClick={onToggleVideo}
-          className={`p-3 rounded-full transition-all duration-200 font-semibold ${
+          className={`p-4 rounded-full transition-all duration-200 font-semibold group relative ${
             videoEnabled
-              ? "bg-gradient-to-br from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 text-white shadow-lg"
-              : "bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white shadow-lg"
+              ? "bg-gradient-to-br from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 text-white shadow-lg hover:shadow-xl hover:scale-110"
+              : "bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white shadow-lg hover:shadow-xl hover:scale-110"
           }`}
-          title={videoEnabled ? "Stop Video" : "Start Video"}
+          title={videoEnabled ? "Stop Video (Alt+V)" : "Start Video (Alt+V)"}
           aria-label={videoEnabled ? "Stop Video" : "Start Video"}
         >
-          {videoEnabled ? <Video size={22} /> : <VideoOff size={22} />}
+          {videoEnabled ? <Video size={24} /> : <VideoOff size={24} />}
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-3 py-1 rounded-full whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            {videoEnabled ? "Stop Video" : "Start Video"}
+          </div>
         </button>
 
         {/* Screen Share Toggle */}
         <button
           onClick={onToggleScreenShare}
-          className={`p-3 rounded-full transition-all duration-200 font-semibold ${
+          className={`p-4 rounded-full transition-all duration-200 font-semibold group relative ${
             screenSharing
-              ? "bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white shadow-lg"
-              : "bg-gradient-to-br from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 text-white shadow-lg"
+              ? "bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white shadow-lg hover:shadow-xl hover:scale-110"
+              : "bg-gradient-to-br from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 text-white shadow-lg hover:shadow-xl hover:scale-110"
           }`}
-          title={screenSharing ? "Stop Sharing" : "Share Screen"}
+          title={
+            screenSharing ? "Stop Sharing (Alt+S)" : "Share Screen (Alt+S)"
+          }
           aria-label={screenSharing ? "Stop Sharing" : "Share Screen"}
         >
-          {screenSharing ? <MonitorOff size={22} /> : <Monitor size={22} />}
+          {screenSharing ? <MonitorOff size={24} /> : <Monitor size={24} />}
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-3 py-1 rounded-full whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            {screenSharing ? "Stop Sharing" : "Share Screen"}
+          </div>
         </button>
 
         {/* Divider */}
-        <div className="w-px h-8 bg-white/10" />
+        <div className="w-px h-10 bg-white/20" />
 
         {/* Leave Call */}
         <button
           onClick={onLeaveCall}
-          className="p-3 rounded-full bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white transition-all duration-200 shadow-lg font-semibold"
-          title="Leave Call"
+          className="p-4 rounded-full bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-110 font-semibold group relative"
+          title="Leave Call (Esc)"
           aria-label="Leave Call"
         >
-          <PhoneOff size={22} />
+          <PhoneOff size={24} />
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-3 py-1 rounded-full whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            Leave Call
+          </div>
         </button>
       </div>
     </div>

@@ -340,52 +340,63 @@ export function VideoRoom({
   }, [roomId]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 relative">
-      <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-10">
+    <div className="h-screen w-screen bg-slate-950 relative flex flex-col overflow-hidden">
+      {/* Header Bar */}
+      <div className="flex items-center justify-between p-4 bg-gradient-to-b from-slate-900/80 to-slate-900/0 backdrop-blur-sm z-10 border-b border-white/5">
         {/* Room ID Badge */}
-        <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-xl border border-white/10 hover:border-blue-400/50 rounded-full px-6 py-3 flex items-center gap-3 transition-all duration-300 shadow-lg">
-          <span className="text-white font-semibold text-sm">Room ID:</span>
-          <code className="text-blue-300 font-mono font-bold tracking-wider">
+        <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-xl border border-white/10 hover:border-blue-400/50 rounded-full px-5 py-2.5 flex items-center gap-3 transition-all duration-300 shadow-lg">
+          <span className="text-white font-semibold text-sm">Room:</span>
+          <code className="text-blue-300 font-mono font-bold tracking-wider text-xs">
             {roomId.slice(0, 8)}...
           </code>
           <button
             onClick={copyRoomId}
-            className="p-2 hover:bg-white/10 rounded-full transition-all duration-200 hover:scale-110"
+            className="p-1.5 hover:bg-white/10 rounded-full transition-all duration-200 hover:scale-110"
             title="Copy Room ID"
           >
             {copied ? (
-              <Check size={16} className="text-green-400" />
+              <Check size={14} className="text-green-400" />
             ) : (
-              <Copy size={16} className="text-white/70 hover:text-white" />
+              <Copy size={14} className="text-white/70 hover:text-white" />
             )}
           </button>
         </div>
 
+        {/* Center - App Title */}
+        <div className="text-center">
+          <h1 className="text-white font-bold text-xl bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            Video Conference
+          </h1>
+        </div>
+
         {/* Participants Badge */}
-        <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-xl border border-white/10 hover:border-green-400/50 rounded-full px-6 py-3 text-white font-semibold shadow-lg transition-all duration-300">
-          <span className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse" />
-            {remoteStreams.size + 1} participant
+        <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-xl border border-white/10 hover:border-green-400/50 rounded-full px-5 py-2.5 text-white font-semibold shadow-lg transition-all duration-300">
+          <span className="flex items-center gap-2 text-sm">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            {remoteStreams.size + 1} user
             {remoteStreams.size !== 0 ? "s" : ""}
           </span>
         </div>
       </div>
 
+      {/* Permission Modal */}
       {permissionDenied ? (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60">
-          <div className="bg-slate-800 p-6 rounded-lg text-white max-w-md text-center">
-            <h3 className="text-lg font-semibold mb-2">Permissions required</h3>
-            <p className="mb-4">{permissionDenied}</p>
-            <div className="flex justify-center gap-3">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-gradient-to-b from-slate-800 to-slate-900 p-8 rounded-2xl text-white max-w-md text-center shadow-2xl border border-white/10">
+            <h3 className="text-xl font-bold mb-3 text-red-400">
+              Permissions Required
+            </h3>
+            <p className="mb-6 text-slate-300 text-sm">{permissionDenied}</p>
+            <div className="flex flex-col gap-3">
               <button
                 onClick={requestPermissions}
-                className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 px-6 py-3 rounded-lg font-semibold transition-all duration-200"
               >
                 Enable Camera & Microphone
               </button>
               <button
                 onClick={runDiagnostics}
-                className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
+                className="bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 px-6 py-3 rounded-lg font-semibold transition-all duration-200"
                 title="Run diagnostics to gather camera/mic/device state"
               >
                 Run Diagnostics
@@ -395,12 +406,16 @@ export function VideoRoom({
         </div>
       ) : null}
 
-      <VideoGrid
-        streams={remoteStreams}
-        localStream={localStream}
-        localUserId={localUid}
-      />
+      {/* Video Grid Container */}
+      <div className="flex-1 overflow-hidden">
+        <VideoGrid
+          streams={remoteStreams}
+          localStream={localStream}
+          localUserId={localUid}
+        />
+      </div>
 
+      {/* Control Bar */}
       <ControlBar
         audioEnabled={audioEnabled}
         videoEnabled={videoEnabled}
