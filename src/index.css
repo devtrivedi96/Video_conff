@@ -67,6 +67,24 @@
   animation: float 3s ease-in-out infinite;
 }
 
+/* Fullscreen fallback and native fullscreen styling */
+:fullscreen,
+:-webkit-full-screen,
+.fs-fallback {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 9999 !important;
+  background: black !important;
+}
+
+.fs-fallback video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
 /* Focus outline styling */
 button:focus,
 input:focus {

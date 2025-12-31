@@ -99,6 +99,8 @@ function VideoCell({
   onFocus,
 }: VideoCellProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastTapRef = useRef<number>(0);
 
   useEffect(() => {
     if (videoRef.current && stream) {
@@ -109,9 +111,59 @@ function VideoCell({
     }
   }, [stream, isLocal]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        const el = containerRef.current;
+        if (el && el.classList.contains("fs-fallback")) {
+          el.classList.remove("fs-fallback");
+        }
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  const toggleFullscreen = async (e?: any) => {
+    e?.stopPropagation();
+    const el = containerRef.current;
+    if (!el) return;
+    try {
+      if (document.fullscreenElement === el) {
+        if (document.exitFullscreen) await document.exitFullscreen();
+      } else if ((el as any).requestFullscreen) {
+        await (el as any).requestFullscreen();
+      } else {
+        // Fallback: toggle a class that makes the tile fill viewport
+        el.classList.toggle("fs-fallback");
+      }
+    } catch (err) {
+      // Fallback class if fullscreen API rejected
+      el.classList.toggle("fs-fallback");
+    }
+  };
+
+  const handleTouchEnd = (e: any) => {
+    const now = Date.now();
+    const timeSince = now - (lastTapRef.current || 0);
+    if (timeSince < 350 && timeSince > 0) {
+      toggleFullscreen();
+    }
+    lastTapRef.current = now;
+  };
+
   return (
     <div
+      ref={containerRef}
       onClick={onFocus}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        toggleFullscreen(e);
+      }}
+      onTouchEnd={handleTouchEnd}
       className={`relative bg-slate-800 rounded-lg overflow-hidden shadow-lg transition-all duration-300 cursor-pointer group ${
         isFocused
           ? "ring-3 ring-blue-500 shadow-2xl shadow-blue-500/30"
