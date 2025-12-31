@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 
 interface VideoGridProps {
-  streams: Map<string, { stream: MediaStream; userId: string }>;
+  streams: Map<
+    string,
+    { stream: MediaStream; userId: string; audio?: boolean; video?: boolean }
+  >;
   localStream: MediaStream | null;
   localUserId: string;
+  localAudio?: boolean;
+  localVideo?: boolean;
 }
 
 export function VideoGrid({
@@ -49,12 +54,16 @@ export function VideoGrid({
       peerId: "local",
       stream: localStream,
       userId: localUserId,
+      audio: undefined,
+      video: undefined,
       isLocal: true,
     },
     ...Array.from(streams.entries()).map(([peerId, { stream, userId }]) => ({
       peerId,
       stream,
       userId,
+      audio: (streams.get(peerId) as any)?.audio,
+      video: (streams.get(peerId) as any)?.video,
       isLocal: false,
     })),
   ];
@@ -85,6 +94,8 @@ interface VideoCellProps {
   peerId: string;
   stream: MediaStream | null;
   userId: string;
+  audio?: boolean;
+  video?: boolean;
   isLocal: boolean;
   isFocused: boolean;
   onFocus: () => void;
@@ -94,6 +105,8 @@ function VideoCell({
   peerId,
   stream,
   userId,
+  audio,
+  video,
   isLocal,
   isFocused,
   onFocus,
@@ -185,11 +198,23 @@ function VideoCell({
       <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-2 rounded-lg text-white text-sm font-medium ring-1 ring-white/20">
         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
         <span className="truncate max-w-[150px]">{userId}</span>
-        {isLocal && (
-          <span className="text-xs bg-blue-500/70 px-2 py-0.5 rounded">
-            You
-          </span>
-        )}
+        <div className="flex items-center gap-2 ml-2">
+          {video === false ? (
+            <span className="text-xs bg-red-600 px-2 py-0.5 rounded">
+              Video Off
+            </span>
+          ) : null}
+          {audio === false ? (
+            <span className="text-xs bg-red-600 px-2 py-0.5 rounded">
+              Muted
+            </span>
+          ) : null}
+          {isLocal && (
+            <span className="text-xs bg-blue-500/70 px-2 py-0.5 rounded">
+              You
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Focus Indicator */}

@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, deleteDoc, doc } from "firebase/firestore";
+import {
+  collection,
+  onSnapshot,
+  deleteDoc,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { ConfirmModal } from "./ConfirmModal";
 
 interface AdminPanelProps {
   roomId: string;
@@ -9,6 +16,8 @@ interface AdminPanelProps {
 
 export function AdminPanel({ roomId, onClose }: AdminPanelProps) {
   const [participants, setParticipants] = useState<any[]>([]);
+  const [confirmKick, setConfirmKick] = useState<string | null>(null);
+  const [confirmEndRoom, setConfirmEndRoom] = useState(false);
 
   useEffect(() => {
     const participantsRef = collection(db, "rooms", roomId, "participants");
@@ -24,6 +33,15 @@ export function AdminPanel({ roomId, onClose }: AdminPanelProps) {
     await deleteDoc(doc(db, "rooms", roomId, "participants", peerId)).catch(
       () => {}
     );
+    setConfirmKick(null);
+  };
+
+  const endRoom = async () => {
+    try {
+      await updateDoc(doc(db, "rooms", roomId), { is_active: false });
+    } catch (e) {}
+    setConfirmEndRoom(false);
+    onClose();
   };
 
   return (
@@ -34,7 +52,7 @@ export function AdminPanel({ roomId, onClose }: AdminPanelProps) {
           Close
         </button>
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 mb-3">
         {participants.map((p) => (
           <div
             key={p.id}
@@ -46,7 +64,7 @@ export function AdminPanel({ roomId, onClose }: AdminPanelProps) {
             </div>
             <div>
               <button
-                onClick={() => remove(p.id)}
+                onClick={() => setConfirmKick(p.id)}
                 className="px-3 py-1 bg-red-600 rounded text-white text-sm"
               >
                 Remove
@@ -55,6 +73,37 @@ export function AdminPanel({ roomId, onClose }: AdminPanelProps) {
           </div>
         ))}
       </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={() => setConfirmEndRoom(true)}
+          className="px-4 py-2 bg-red-700 rounded text-white text-sm"
+        >
+          End Room
+        </button>
+      </div>
+
+      {confirmKick ? (
+        <ConfirmModal
+          title="Remove Participant"
+          message="Are you sure you want to remove this participant from the room?"
+          confirmText="Remove"
+          cancelText="Cancel"
+          onConfirm={() => remove(confirmKick)}
+          onCancel={() => setConfirmKick(null)}
+        />
+      ) : null}
+
+      {confirmEndRoom ? (
+        <ConfirmModal
+          title="End Room"
+          message="End the room for everyone? This will disconnect all participants."
+          confirmText="End Room"
+          cancelText="Cancel"
+          onConfirm={endRoom}
+          onCancel={() => setConfirmEndRoom(false)}
+        />
+      ) : null}
     </div>
   );
 }

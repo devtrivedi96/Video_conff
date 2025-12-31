@@ -519,6 +519,8 @@ export function VideoRoom({
           streams={remoteStreams}
           localStream={localStream}
           localUserId={localDisplayName}
+          localAudio={audioEnabled}
+          localVideo={videoEnabled}
         />
       </div>
 

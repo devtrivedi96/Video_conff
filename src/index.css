@@ -85,6 +85,25 @@
   object-fit: contain !important;
 }
 
+/* Join notification animation */
+.join-notify-enter {
+  transform: translateY(-10px);
+  opacity: 0;
+}
+.join-notify-enter-active {
+  transform: translateY(0);
+  opacity: 1;
+  transition: all 300ms ease;
+}
+.join-notify-exit {
+  opacity: 1;
+}
+.join-notify-exit-active {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: all 300ms ease;
+}
+
 /* Focus outline styling */
 button:focus,
 input:focus {
