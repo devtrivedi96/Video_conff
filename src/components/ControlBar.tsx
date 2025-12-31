@@ -16,6 +16,9 @@ interface ControlBarProps {
   onToggleVideo: () => void;
   onToggleScreenShare: () => void;
   onLeaveCall: () => void;
+  isHost?: boolean;
+  onOpenAdmin?: () => void;
+  onOpenBoard?: () => void;
 }
 
 export function ControlBar({
@@ -26,6 +29,9 @@ export function ControlBar({
   onToggleVideo,
   onToggleScreenShare,
   onLeaveCall,
+  isHost = false,
+  onOpenAdmin,
+  onOpenBoard,
 }: ControlBarProps) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent p-6">
@@ -85,6 +91,26 @@ export function ControlBar({
 
         {/* Divider */}
         <div className="w-px h-10 bg-white/20" />
+
+        {/* Host Controls */}
+        {isHost ? (
+          <>
+            <button
+              onClick={() => onOpenBoard && onOpenBoard()}
+              className="p-3 rounded-lg bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-md hover:scale-105"
+              title="Open Shared Board"
+            >
+              Board
+            </button>
+            <button
+              onClick={() => onOpenAdmin && onOpenAdmin()}
+              className="p-3 rounded-lg bg-gradient-to-br from-amber-600 to-amber-700 text-white shadow-md hover:scale-105"
+              title="Admin Panel"
+            >
+              Admin
+            </button>
+          </>
+        ) : null}
 
         {/* Leave Call */}
         <button

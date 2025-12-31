@@ -9,10 +9,13 @@ import {
   serverTimestamp,
   onSnapshot,
   updateDoc,
+  collection,
 } from "firebase/firestore";
 import { VideoGrid } from "./VideoGrid";
 import { ControlBar } from "./ControlBar";
 import { Copy, Check } from "lucide-react";
+import { AdminPanel } from "./AdminPanel";
+import { SharedBoard } from "./SharedBoard";
 
 interface VideoRoomProps {
   roomId: string;
@@ -36,6 +39,16 @@ export function VideoRoom({
   >(new Map());
   const [copied, setCopied] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState<string | null>(null);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [showBoard, setShowBoard] = useState(false);
+  const [participantsInfo, setParticipantsInfo] = useState<
+    Map<string, { uid: string; displayName?: string }>
+  >(new Map());
+  const participantsRef = useRef<
+    Map<string, { uid: string; displayName?: string }>
+  >(new Map());
+
+  const [joinNotifications, setJoinNotifications] = useState<string[]>([]);
 
   const webrtcRef = useRef<WebRTCManager | null>(null);
   const signalingRef = useRef<SignalingService | null>(null);
@@ -50,7 +63,9 @@ export function VideoRoom({
       if (mounted) {
         setRemoteStreams((prev) => {
           const newMap = new Map(prev);
-          newMap.set(peerId, { stream, userId: peerId.split("-")[0] });
+          const info = participantsRef.current.get(peerId);
+          const display = info?.displayName || peerId.split("-")[0];
+          newMap.set(peerId, { stream, userId: display });
           console.debug(
             "VideoRoom: remoteStreams updated, count=",
             newMap.size
@@ -161,6 +176,69 @@ export function VideoRoom({
 
     return () => unsub();
   }, [roomId, localUid, isHost, onLeave]);
+
+  // Subscribe to participants collection to keep display names and detect joins
+  useEffect(() => {
+    const participantsCol = collection(db, "rooms", roomId, "participants");
+    const unsub = onSnapshot(participantsCol, (snap) => {
+      const newMap = new Map<string, { uid: string; displayName?: string }>();
+      snap.forEach((d) => {
+        const data = d.data() as any;
+        newMap.set(d.id, { uid: data.uid, displayName: data.displayName });
+      });
+
+      // detect added participants for notifications
+      snap.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          const d = change.doc.data() as any;
+          // don't notify for ourselves
+          if (change.doc.id !== peerIdRef.current) {
+            const name = d.displayName || d.uid || change.doc.id.split("-")[0];
+            setJoinNotifications((arr) => [...arr, `${name} joined`]);
+            // auto remove notification after 4s
+            setTimeout(() => {
+              setJoinNotifications((arr) => arr.slice(1));
+            }, 4000);
+          }
+        }
+      });
+
+      participantsRef.current = newMap;
+      setParticipantsInfo(newMap);
+    });
+
+    return () => unsub();
+  }, [roomId]);
+
+  // When participantsInfo updates, refresh remoteStreams' userId labels
+  useEffect(() => {
+    setRemoteStreams((prev) => {
+      const newMap = new Map(prev);
+      for (const [peerId, value] of newMap.entries()) {
+        const info = participantsRef.current.get(peerId);
+        if (info && value.userId !== info.displayName) {
+          newMap.set(peerId, {
+            stream: value.stream,
+            userId: info.displayName || value.userId,
+          });
+        }
+      }
+      return newMap;
+    });
+  }, [participantsInfo]);
+
+  // Watch our own participant doc: if deleted (kicked) -> leave
+  useEffect(() => {
+    const partRef = doc(db, "rooms", roomId, "participants", peerIdRef.current);
+    const unsub = onSnapshot(partRef, (snap) => {
+      if (!snap.exists()) {
+        // our participant doc removed -> we were kicked
+        alert("You were removed from the room by the host.");
+        onLeave();
+      }
+    });
+    return () => unsub();
+  }, [roomId, onLeave]);
 
   const handleToggleAudio = useCallback(() => {
     if (webrtcRef.current) {
@@ -321,16 +399,33 @@ export function VideoRoom({
   (window as any).runDiagnostics = runDiagnostics;
 
   const handleLeave = useCallback(() => {
-    if (signalingRef.current) {
-      signalingRef.current.cleanup();
-    }
-    if (webrtcRef.current) {
-      webrtcRef.current.cleanup();
-    }
-    deleteDoc(
-      doc(db, "rooms", roomId, "participants", peerIdRef.current)
-    ).then();
-    onLeave();
+    const doLeave = async () => {
+      if (signalingRef.current) {
+        signalingRef.current.cleanup();
+      }
+      if (webrtcRef.current) {
+        webrtcRef.current.cleanup();
+      }
+
+      // If host, mark room inactive so others leave
+      if (isHost) {
+        try {
+          await updateDoc(doc(db, "rooms", roomId), {
+            is_active: false,
+          });
+        } catch (e) {}
+      }
+
+      try {
+        await deleteDoc(
+          doc(db, "rooms", roomId, "participants", peerIdRef.current)
+        );
+      } catch (e) {}
+
+      onLeave();
+    };
+
+    doLeave();
   }, [onLeave]);
 
   const copyRoomId = useCallback(() => {
@@ -379,6 +474,18 @@ export function VideoRoom({
         </div>
       </div>
 
+      {/* Join notifications */}
+      <div className="absolute top-20 right-6 z-50 flex flex-col gap-2">
+        {joinNotifications.map((n, idx) => (
+          <div
+            key={idx}
+            className="bg-green-600/90 text-white px-4 py-2 rounded-md shadow-md text-sm"
+          >
+            {n}
+          </div>
+        ))}
+      </div>
+
       {/* Permission Modal */}
       {permissionDenied ? (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
@@ -411,7 +518,7 @@ export function VideoRoom({
         <VideoGrid
           streams={remoteStreams}
           localStream={localStream}
-          localUserId={localUid}
+          localUserId={localDisplayName}
         />
       </div>
 
@@ -424,7 +531,16 @@ export function VideoRoom({
         onToggleVideo={handleToggleVideo}
         onToggleScreenShare={handleToggleScreenShare}
         onLeaveCall={handleLeave}
+        isHost={isHost}
+        onOpenAdmin={() => setShowAdmin(true)}
+        onOpenBoard={() => setShowBoard((s) => !s)}
       />
+
+      {showAdmin && isHost ? (
+        <AdminPanel roomId={roomId} onClose={() => setShowAdmin(false)} />
+      ) : null}
+
+      {showBoard ? <SharedBoard roomId={roomId} isHost={isHost} /> : null}
     </div>
   );
 }
