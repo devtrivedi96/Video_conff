@@ -57,32 +57,23 @@ export function VideoRoom({
 
   // finish initialization after acquiring local stream
   const finishInitialization = async (webrtc: WebRTCManager) => {
-    let mounted = true;
-
     webrtc.setOnRemoteStream((peerId, stream) => {
-      if (mounted) {
-        setRemoteStreams((prev) => {
-          const newMap = new Map(prev);
-          const info = participantsRef.current.get(peerId);
-          const display = info?.displayName || peerId.split("-")[0];
-          newMap.set(peerId, { stream, userId: display });
-          console.debug(
-            "VideoRoom: remoteStreams updated, count=",
-            newMap.size
-          );
-          return newMap;
-        });
-      }
+      setRemoteStreams((prev) => {
+        const newMap = new Map(prev);
+        const info = participantsRef.current.get(peerId);
+        const display = info?.displayName || peerId.split("-")[0];
+        newMap.set(peerId, { stream, userId: display });
+        console.debug("VideoRoom: remoteStreams updated, count=", newMap.size);
+        return newMap;
+      });
     });
 
     webrtc.setOnPeerDisconnected((peerId) => {
-      if (mounted) {
-        setRemoteStreams((prev) => {
-          const newMap = new Map(prev);
-          newMap.delete(peerId);
-          return newMap;
-        });
-      }
+      setRemoteStreams((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(peerId);
+        return newMap;
+      });
     });
 
     // Register participant in Firestore under rooms/{roomId}/participants/{peerId}
@@ -109,9 +100,9 @@ export function VideoRoom({
   };
 
   useEffect(() => {
-    let mounted = true;
-
     async function initializeCall() {
+      // Create manager but DO NOT request camera/microphone here.
+      // Camera access must be requested explicitly by user via the Enable button.
       const webrtc = new WebRTCManager();
       webrtcRef.current = webrtc;
 
@@ -123,29 +114,13 @@ export function VideoRoom({
         }).catch(() => {});
       });
 
-      try {
-        const stream = await webrtc.getLocalStream();
-        if (mounted) {
-          setLocalStream(stream);
-        }
-        await finishInitialization(webrtc);
-      } catch (error: any) {
-        console.error("Failed to initialize call:", error);
-        if (
-          error &&
-          (error.name === "NotAllowedError" || error.name === "NotFoundError")
-        ) {
-          setPermissionDenied(
-            "Camera and microphone access required. Click to enable."
-          );
-        }
-      }
+      // Intentionally do not call getLocalStream here. The app will prompt
+      // for camera/microphone when the user clicks "Enable Camera & Microphone".
     }
 
     initializeCall();
 
     return () => {
-      mounted = false;
       if (signalingRef.current) {
         signalingRef.current.cleanup();
       }
@@ -295,7 +270,7 @@ export function VideoRoom({
       webrtcRef.current = webrtc;
       const stream = await webrtc.getLocalStream();
       setLocalStream(stream);
-      await finishInitialization(webrtc);
+      if (!signalingRef.current) await finishInitialization(webrtc);
     } catch (err: any) {
       console.error("Permission request failed:", err);
       console.error(err);
@@ -309,7 +284,7 @@ export function VideoRoom({
           .catch(() => null);
         if (audioStream) {
           setLocalStream(audioStream);
-          await finishInitialization(webrtc);
+          if (!signalingRef.current) await finishInitialization(webrtc);
           return;
         }
       } catch (e) {
@@ -328,7 +303,7 @@ export function VideoRoom({
           const webrtc = webrtcRef.current ?? new WebRTCManager();
           webrtcRef.current = webrtc;
           setLocalStream(audioOnly);
-          await finishInitialization(webrtc);
+          if (!signalingRef.current) await finishInitialization(webrtc);
           return;
         }
       } catch (e) {
@@ -345,7 +320,7 @@ export function VideoRoom({
           const webrtc = webrtcRef.current ?? new WebRTCManager();
           webrtcRef.current = webrtc;
           setLocalStream(videoOnly);
-          await finishInitialization(webrtc);
+          if (!signalingRef.current) await finishInitialization(webrtc);
           return;
         }
       } catch (e) {
@@ -542,7 +517,7 @@ export function VideoRoom({
         <AdminPanel roomId={roomId} onClose={() => setShowAdmin(false)} />
       ) : null}
 
-      {showBoard ? <SharedBoard roomId={roomId} isHost={isHost} /> : null}
+      {showBoard ? <SharedBoard roomId={roomId} /> : null}
     </div>
   );
 }

@@ -14,10 +14,9 @@ import { javascript } from "@codemirror/lang-javascript";
 
 interface SharedBoardProps {
   roomId: string;
-  isHost: boolean;
 }
 
-export function SharedBoard({ roomId, isHost }: SharedBoardProps) {
+export function SharedBoard({ roomId }: SharedBoardProps) {
   const [board, setBoard] = useState<string>("");
   const [code, setCode] = useState<string>("");
   const [editingBoard, setEditingBoard] = useState(false);

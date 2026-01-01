@@ -6,8 +6,8 @@ import SignUp from "./SignUp";
 import { Video, Users } from "lucide-react";
 
 interface RoomLobbyProps {
-  onCreateRoom: (roomName: string, userName: string) => void;
-  onJoinRoom: (roomId: string, userName: string) => void;
+  onCreateRoom: (roomName: string) => void;
+  onJoinRoom: (roomId: string) => void;
 }
 
 export function RoomLobby({ onCreateRoom, onJoinRoom }: RoomLobbyProps) {
@@ -106,15 +106,15 @@ export function RoomLobby({ onCreateRoom, onJoinRoom }: RoomLobbyProps) {
 
   const handleCreateRoom = (e: React.FormEvent) => {
     e.preventDefault();
-    if (roomName.trim() && userName.trim()) {
-      onCreateRoom(roomName.trim(), userName.trim());
+    if (roomName.trim()) {
+      onCreateRoom(roomName.trim());
     }
   };
 
   const handleJoinRoom = (e: React.FormEvent) => {
     e.preventDefault();
-    if (roomId.trim() && userName.trim()) {
-      onJoinRoom(roomId.trim(), userName.trim());
+    if (roomId.trim()) {
+      onJoinRoom(roomId.trim());
     }
   };
 

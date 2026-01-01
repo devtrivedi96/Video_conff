@@ -20,7 +20,7 @@ function App() {
     displayName: string;
   } | null>(null);
 
-  const handleCreateRoom = async (roomName: string, userName: string) => {
+  const handleCreateRoom = async (roomName: string) => {
     try {
       if (!user) {
         alert("Please sign in to create a room.");
@@ -47,7 +47,7 @@ function App() {
     }
   };
 
-  const handleJoinRoom = async (roomId: string, userName: string) => {
+  const handleJoinRoom = async (roomId: string) => {
     try {
       if (!user) {
         alert("Please sign in to join a room.");

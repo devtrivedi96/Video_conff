@@ -159,7 +159,7 @@ function VideoCell({
     }
   };
 
-  const handleTouchEnd = (e: any) => {
+  const handleTouchEnd = () => {
     const now = Date.now();
     const timeSince = now - (lastTapRef.current || 0);
     if (timeSince < 350 && timeSince > 0) {

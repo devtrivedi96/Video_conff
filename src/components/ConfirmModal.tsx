@@ -1,4 +1,4 @@
-import React from "react";
+// React import not required with the automatic JSX runtime
 
 interface ConfirmModalProps {
   title?: string;

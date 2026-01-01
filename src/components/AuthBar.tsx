@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useAuth } from "../lib/auth";
 import ProfileSettings from "./ProfileSettings";
 import { LogOut, User } from "lucide-react";
