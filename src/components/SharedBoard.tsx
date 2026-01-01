@@ -7,6 +7,10 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
+// optional CodeMirror integration
+import CodeMirror from "@uiw/react-codemirror";
+
+import { javascript } from "@codemirror/lang-javascript";
 
 interface SharedBoardProps {
   roomId: string;
@@ -69,7 +73,11 @@ export function SharedBoard({ roomId, isHost }: SharedBoardProps) {
   };
 
   // Cursor docs: update our cursor position on selection change (minimal)
-  const updateCursor = async (pos: { line: number; ch: number }) => {
+  const updateCursor = async (pos: {
+    index?: number;
+    line?: number;
+    ch?: number;
+  }) => {
     try {
       await setDoc(doc(db, "rooms", roomId, "cursors", peerIdRef.current), {
         pos,
@@ -144,6 +152,24 @@ export function SharedBoard({ roomId, isHost }: SharedBoardProps) {
   }, [roomId, boardEditingBy, codeEditingBy]);
 
   const [remoteCursors, setRemoteCursors] = useState<Record<string, any>>({});
+
+  const [participantsMap, setParticipantsMap] = useState<
+    Record<string, string>
+  >({});
+
+  // subscribe to participants to map peerId -> displayName
+  useEffect(() => {
+    const partsCol = collection(db, "rooms", roomId, "participants");
+    const unsub = onSnapshot(partsCol, (snap) => {
+      const map: Record<string, string> = {};
+      snap.forEach((d) => {
+        const data = d.data() as any;
+        map[d.id] = data.displayName || data.uid || d.id.split("-")[0];
+      });
+      setParticipantsMap(map);
+    });
+    return () => unsub();
+  }, [roomId]);
 
   useEffect(() => {
     const cursorsCol = collection(db, "rooms", roomId, "cursors");
@@ -274,11 +300,20 @@ export function SharedBoard({ roomId, isHost }: SharedBoardProps) {
         <div>
           {editingCode ? (
             <div className="flex flex-col gap-2">
-              <textarea
-                value={code}
-                onChange={(e) => scheduleCodeSave(e.target.value)}
-                className="w-full h-40 p-2 rounded bg-black border border-white/10 text-green-200 font-mono text-sm"
-              />
+              <div className="w-full">
+                <CodeMirror
+                  value={code}
+                  height="240px"
+                  extensions={[javascript()]}
+                  onChange={(value: string, viewUpdate: any) => {
+                    scheduleCodeSave(value);
+                    try {
+                      const head = viewUpdate.state.selection.main.head;
+                      updateCursor({ index: head });
+                    } catch (e) {}
+                  }}
+                />
+              </div>
               <div className="flex justify-end gap-2">
                 <button
                   onClick={saveCode}
@@ -309,8 +344,13 @@ export function SharedBoard({ roomId, isHost }: SharedBoardProps) {
                 {Object.keys(remoteCursors)
                   .filter((k) => k !== peerIdRef.current)
                   .map((k) => (
-                    <li key={k}>
-                      {k}: {JSON.stringify(remoteCursors[k].pos)}
+                    <li key={k} className="py-1">
+                      <span className="font-medium text-white">
+                        {participantsMap[k] || k}
+                      </span>
+                      <span className="ml-2 text-slate-400">
+                        {JSON.stringify(remoteCursors[k].pos)}
+                      </span>
                     </li>
                   ))}
               </ul>
