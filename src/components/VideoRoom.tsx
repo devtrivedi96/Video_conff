@@ -47,6 +47,8 @@ export function VideoRoom({
   const participantsRef = useRef<
     Map<string, { uid: string; displayName?: string }>
   >(new Map());
+  const registeredRef = useRef(false);
+  const [hasJoined, setHasJoined] = useState(false);
 
   const [joinNotifications, setJoinNotifications] = useState<string[]>([]);
 
@@ -77,25 +79,50 @@ export function VideoRoom({
     });
 
     // Register participant in Firestore under rooms/{roomId}/participants/{peerId}
-    try {
-      await setDoc(
-        doc(db, "rooms", roomId, "participants", peerIdRef.current),
-        {
-          uid: localUid,
-          displayName: localDisplayName,
-          joined_at: serverTimestamp(),
-          audio: audioEnabled,
-          video: videoEnabled,
-          screen: false,
-        }
-      );
+    // Use retries to tolerate transient failures.
+    const maxRetries = 3;
+    let attempt = 0;
+    let registered = false;
+    while (attempt < maxRetries && !registered) {
+      try {
+        attempt++;
+        await setDoc(
+          doc(db, "rooms", roomId, "participants", peerIdRef.current),
+          {
+            uid: localUid,
+            displayName: localDisplayName,
+            joined_at: serverTimestamp(),
+            audio: audioEnabled,
+            video: videoEnabled,
+            screen: false,
+          }
+        );
+        registered = true;
+      } catch (err) {
+        console.error(
+          `Attempt ${attempt} to register participant failed:`,
+          err
+        );
+        if (attempt < maxRetries)
+          await new Promise((r) => setTimeout(r, 300 * attempt));
+      }
+    }
 
+    if (!registered) {
+      console.error("Failed to register participant after retries");
+      return;
+    }
+
+    registeredRef.current = true;
+    setHasJoined(true);
+
+    try {
       const signaling = new SignalingService(roomId, peerIdRef.current, webrtc);
       signalingRef.current = signaling;
       await signaling.initialize();
       setPermissionDenied(null);
     } catch (err) {
-      console.error("Error finishing initialization:", err);
+      console.error("Error initializing signaling:", err);
     }
   };
 
@@ -127,9 +154,14 @@ export function VideoRoom({
       if (webrtcRef.current) {
         webrtcRef.current.cleanup();
       }
-      deleteDoc(
-        doc(db, "rooms", roomId, "participants", peerIdRef.current)
-      ).then();
+      deleteDoc(doc(db, "rooms", roomId, "participants", peerIdRef.current))
+        .catch(() => {})
+        .then(() => {
+          registeredRef.current = false;
+          try {
+            setHasJoined(false);
+          } catch (e) {}
+        });
     };
   }, [roomId, localUid, localDisplayName]);
 
@@ -206,6 +238,9 @@ export function VideoRoom({
   useEffect(() => {
     const partRef = doc(db, "rooms", roomId, "participants", peerIdRef.current);
     const unsub = onSnapshot(partRef, (snap) => {
+      // Ignore the initial missing-document callback until we've registered
+      // our participant doc in Firestore.
+      if (!registeredRef.current) return;
       if (!snap.exists()) {
         // our participant doc removed -> we were kicked
         alert("You were removed from the room by the host.");
@@ -482,6 +517,32 @@ export function VideoRoom({
                 title="Run diagnostics to gather camera/mic/device state"
               >
                 Run Diagnostics
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Pre-join modal: ask user to join the room before requesting camera/mic */}
+      {!hasJoined && !permissionDenied ? (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-gradient-to-b from-slate-800 to-slate-900 p-8 rounded-2xl text-white max-w-md text-center shadow-2xl border border-white/10">
+            <h3 className="text-xl font-bold mb-3">Ready to join?</h3>
+            <p className="mb-6 text-slate-300 text-sm">
+              Click to enable your camera & microphone and join the room.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={requestPermissions}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 px-6 py-3 rounded-lg font-semibold"
+              >
+                Join Room
+              </button>
+              <button
+                onClick={() => onLeave()}
+                className="bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 px-6 py-3 rounded-lg font-semibold"
+              >
+                Cancel
               </button>
             </div>
           </div>

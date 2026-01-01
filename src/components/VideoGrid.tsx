@@ -102,7 +102,7 @@ interface VideoCellProps {
 }
 
 function VideoCell({
-  peerId,
+  peerId: _peerId,
   stream,
   userId,
   audio,
