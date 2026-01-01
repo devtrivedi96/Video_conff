@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import { RoomLobby } from "./components/RoomLobby";
 import { VideoRoom } from "./components/VideoRoom";
+import ThemeToggle from "./components/ThemeToggle";
 
 function App() {
   const { user } = useAuth();
@@ -79,17 +80,23 @@ function App() {
 
   if (currentRoom) {
     return (
-      <VideoRoom
-        roomId={currentRoom.roomId}
-        localUid={currentRoom.uid}
-        localDisplayName={currentRoom.displayName}
-        onLeave={handleLeaveRoom}
-      />
+      <>
+        <ThemeToggle />
+        <VideoRoom
+          roomId={currentRoom.roomId}
+          localUid={currentRoom.uid}
+          localDisplayName={currentRoom.displayName}
+          onLeave={handleLeaveRoom}
+        />
+      </>
     );
   }
 
   return (
-    <RoomLobby onCreateRoom={handleCreateRoom} onJoinRoom={handleJoinRoom} />
+    <>
+      <ThemeToggle />
+      <RoomLobby onCreateRoom={handleCreateRoom} onJoinRoom={handleJoinRoom} />
+    </>
   );
 }
 

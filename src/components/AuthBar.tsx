@@ -18,7 +18,11 @@ export function AuthBar() {
       <div className="relative">
         <button
           onClick={() => setOpen((v) => !v)}
-          className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-blue-500/50 hover:ring-blue-400 bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-blue-500/50 font-semibold text-white"
+          style={{
+            background:
+              "linear-gradient(90deg, var(--primary-start), var(--primary-end))",
+          }}
+          className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-blue-500/50 hover:ring-blue-400 flex items-center justify-center transition-all duration-200 shadow-lg font-semibold text-white"
           aria-label="Open profile"
           title={user.displayName || user.email || "Profile"}
         >
@@ -36,7 +40,7 @@ export function AuthBar() {
         </button>
 
         {open && (
-          <div className="absolute right-0 mt-3 w-56 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl border border-white/10 text-white shadow-2xl rounded-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute right-0 mt-3 w-56 glass-card text-white shadow-2xl rounded-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="px-4 py-4 border-b border-white/10">
               <p className="text-sm font-semibold text-gray-200">
                 {user.displayName || "Guest"}

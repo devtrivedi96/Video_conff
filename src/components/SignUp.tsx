@@ -43,11 +43,11 @@ export function SignUp({
   const passwordsMatch = password && confirm && password === confirm;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-96 h-96 bg-green-500/10 rounded-full blur-3xl -z-10 animate-pulse" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl -z-10 animate-pulse" />
 
-      <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl border border-white/10 rounded-3xl p-10 max-w-md w-full text-white shadow-2xl">
+      <div className="glass-card p-10 max-w-md w-full text-white shadow-2xl">
         <h2 className="text-4xl font-bold mb-2">Get Started</h2>
         <p className="text-gray-400 mb-8">
           Create your account to start video calling
@@ -130,7 +130,7 @@ export function SignUp({
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 rounded-lg text-white font-semibold transition-all duration-200 shadow-lg hover:shadow-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Creating account..." : "Create Account"}
           </button>
