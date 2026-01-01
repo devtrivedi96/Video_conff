@@ -93,23 +93,24 @@ export function ControlBar({
         <div className="w-px h-10 bg-white/20" />
 
         {/* Host Controls */}
+        {/* Shared board access for all participants */}
+        <button
+          onClick={() => onOpenBoard && onOpenBoard()}
+          className="p-3 rounded-lg bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-md hover:scale-105"
+          title="Open Shared Board"
+        >
+          Board
+        </button>
+
+        {/* Admin panel only for host */}
         {isHost ? (
-          <>
-            <button
-              onClick={() => onOpenBoard && onOpenBoard()}
-              className="p-3 rounded-lg bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-md hover:scale-105"
-              title="Open Shared Board"
-            >
-              Board
-            </button>
-            <button
-              onClick={() => onOpenAdmin && onOpenAdmin()}
-              className="p-3 rounded-lg bg-gradient-to-br from-amber-600 to-amber-700 text-white shadow-md hover:scale-105"
-              title="Admin Panel"
-            >
-              Admin
-            </button>
-          </>
+          <button
+            onClick={() => onOpenAdmin && onOpenAdmin()}
+            className="p-3 rounded-lg bg-gradient-to-br from-amber-600 to-amber-700 text-white shadow-md hover:scale-105"
+            title="Admin Panel"
+          >
+            Admin
+          </button>
         ) : null}
 
         {/* Leave Call */}

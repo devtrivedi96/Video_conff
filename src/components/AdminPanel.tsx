@@ -18,6 +18,8 @@ export function AdminPanel({ roomId, onClose }: AdminPanelProps) {
   const [participants, setParticipants] = useState<any[]>([]);
   const [confirmKick, setConfirmKick] = useState<string | null>(null);
   const [confirmEndRoom, setConfirmEndRoom] = useState(false);
+  const [hostId, setHostId] = useState<string | null>(null);
+  const [confirmMakeHost, setConfirmMakeHost] = useState<string | null>(null);
 
   useEffect(() => {
     const participantsRef = collection(db, "rooms", roomId, "participants");
@@ -28,6 +30,25 @@ export function AdminPanel({ roomId, onClose }: AdminPanelProps) {
     });
     return () => unsub();
   }, [roomId]);
+
+  useEffect(() => {
+    const roomRef = doc(db, "rooms", roomId);
+    const unsub = onSnapshot(roomRef, (snap) => {
+      const data = snap.data() as any;
+      if (!data) return;
+      setHostId(data.hostId || null);
+    });
+    return () => unsub();
+  }, [roomId]);
+
+  const makeHost = async (uid: string) => {
+    try {
+      await updateDoc(doc(db, "rooms", roomId), { hostId: uid });
+    } catch (e) {
+      console.error("Failed to transfer host:", e);
+      alert("Failed to transfer host. Try again.");
+    }
+  };
 
   const remove = async (peerId: string) => {
     await deleteDoc(doc(db, "rooms", roomId, "participants", peerId)).catch(
@@ -63,6 +84,19 @@ export function AdminPanel({ roomId, onClose }: AdminPanelProps) {
               <div className="text-xs text-slate-400">{p.uid}</div>
             </div>
             <div>
+              {hostId === p.uid ? (
+                <span className="px-3 py-1 bg-green-600 rounded text-white text-sm">
+                  Host
+                </span>
+              ) : (
+                <button
+                  onClick={() => setConfirmMakeHost(p.uid)}
+                  className="px-3 py-1 bg-amber-600 rounded text-white text-sm mr-2"
+                >
+                  Make Host
+                </button>
+              )}
+
               <button
                 onClick={() => setConfirmKick(p.id)}
                 className="px-3 py-1 bg-red-600 rounded text-white text-sm"
@@ -91,6 +125,20 @@ export function AdminPanel({ roomId, onClose }: AdminPanelProps) {
           cancelText="Cancel"
           onConfirm={() => remove(confirmKick)}
           onCancel={() => setConfirmKick(null)}
+        />
+      ) : null}
+
+      {confirmMakeHost ? (
+        <ConfirmModal
+          title="Transfer Host"
+          message={`Make this participant the new host? They will gain admin controls.`}
+          confirmText="Make Host"
+          cancelText="Cancel"
+          onConfirm={() => {
+            makeHost(confirmMakeHost);
+            setConfirmMakeHost(null);
+          }}
+          onCancel={() => setConfirmMakeHost(null)}
         />
       ) : null}
 
